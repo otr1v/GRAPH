@@ -1,0 +1,4 @@
+all:
+	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror	
+build:
+	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror
