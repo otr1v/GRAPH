@@ -1,4 +1,8 @@
 all:
-	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror	
+	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror -fsanitize=address
 build:
-	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror
+	g++ graph.cpp funcgraph.cpp -o graph -Wall -Wextra -Wpedantic -Werror -fsanitize=address
+clean:
+	rm -rf graph tests *.o
+tests:
+	g++ tests.cpp funcgraph.cpp -o tests -fsanitize=address
