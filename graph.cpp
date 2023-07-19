@@ -2,8 +2,10 @@
 
 int main()
 {
-    node base[AMOUNT_OF_NODES] = {};
-    AddNode(base);
-    ReadCommands();
+    struct Graph* graph = CreateGraph();
+    
+    ReadCommands(graph, stdin, stdout);
+    DestroyGraph(graph);
+
     return 0;
 }
