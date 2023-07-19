@@ -26,9 +26,9 @@ struct Graph
 {
     
     int* vertices;
-    int numnodes;
-    int curnumnodes;
-    bool** edges;
+    int numnodes;       // max amount of nodes not to do reallocation
+    int curnumnodes; // current amount of nodes 
+    bool** edges;       // adjacency matrix
     int root;
     struct PostOrder postorder;
 };
@@ -40,7 +40,7 @@ struct Test
     int* programresult;
 };
 struct Graph* CreateGraph();
-void AddNode(struct Graph* graph, FILE* base);
+void AddNode(struct Graph* graph, FILE* base, bool testflag);
 void AddEdge(struct Graph* graph, FILE* base);
 bool HasNode(struct Graph* graph, int* vertice);
 void ReallocGraph(struct Graph* graph);
@@ -50,7 +50,7 @@ void Root(struct Graph* graph, FILE* base);
 void RPO(struct Graph* graph, int curnode);
 void PrintRPO(struct Graph* graph, FILE* answer);
 bool IsVisited(struct Graph* graph, int index);
-void ReadCommands(struct Graph* grph, FILE* base, FILE* answer);
+void ReadCommands(struct Graph* grph, FILE* base, FILE* answer, bool testflag);
 void PrintGraph(struct Graph* graph);
 void Tests(struct Graph* graph, struct Test* test, FILE* base);
 bool Verifier(struct Graph* graph, struct Test* test, FILE* base);
