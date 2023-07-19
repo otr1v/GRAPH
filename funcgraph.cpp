@@ -30,12 +30,17 @@ struct Graph* CreateGraph()
 
 //======================================================
 
-void AddNode(struct Graph* graph, FILE* base)
+void AddNode(struct Graph* graph, FILE* base, bool testflag)    // if testflag == 1 -> FREE_CELL = 0
 {
     CHECK_ERR(graph == NULL, "graph == null");
     int value = 0;
     fscanf(base, "%d", &value);
-
+   
+    static int FREE_CELL = 0;
+    if (testflag == true)
+    {
+        FREE_CELL = 0;
+    }
     for (int idx = 0; idx < graph->curnumnodes; idx++)
     {
         if (graph->vertices[idx] == value)
@@ -44,9 +49,24 @@ void AddNode(struct Graph* graph, FILE* base)
             return;
         }
     }
-    graph->curnumnodes++;
-    static int FREE_CELL = 0;
-    graph->vertices[FREE_CELL++] = value;
+
+    bool flag = false;
+    
+    for (int idx = 0; idx < FREE_CELL; idx++)
+    {
+        if (graph->vertices[idx] == POISON)
+        {
+            graph->vertices[idx] = value;
+            flag = true;
+
+            break;
+        }
+    }
+    if (flag == false)
+    {
+        graph->vertices[FREE_CELL++] = value;
+        graph->curnumnodes++;
+    }
     if (FREE_CELL >= graph->numnodes)
     {
         ReallocGraph(graph);
@@ -102,40 +122,25 @@ void ReallocGraph(struct Graph* graph)
 {
     CHECK_ERR(graph == NULL, "graph == null");
 
-    bool** tempEdges = (bool**) calloc(sizeof(bool*), graph->numnodes);
-    CHECK_ERR(tempEdges == NULL, "NOT ENOUGH MEMORY");
-    for (int idx = 0; idx < graph->numnodes; idx++)
+    int old_numnodes = graph->numnodes;
+    graph->numnodes *= 2;
+
+    for (int idx = 0; idx < old_numnodes; idx++)
     {
-        tempEdges[idx] = (bool*) calloc(sizeof(bool), graph->numnodes);
-        CHECK_ERR(tempEdges[idx] == NULL, "NOT ENOUGH MEMORY");
-    }
-    for (int idx1 = 0; idx1 < graph->numnodes; idx1++)
-    {
-        for (int idx2 = 0; idx2 < graph->numnodes; idx2++)
-        {
-            tempEdges[idx1][idx2] = graph->edges[idx1][idx2];
-        }
+        graph->edges[idx] = (bool*) realloc(graph->edges[idx], sizeof(bool) * graph->numnodes);
+        CHECK_ERR(graph->edges[idx] == NULL, "NOT ENOUGH MEMORY");
     }
 
-    graph->numnodes = graph->numnodes * 2;
-
-    graph->edges = (bool**) calloc(sizeof(bool*), graph->numnodes);
+    graph->edges = (bool**) realloc(graph->edges, sizeof(bool*) * graph->numnodes);
     CHECK_ERR(graph->edges == NULL, "NOT ENOUGH MEMORY");
 
-    for (int idx = 0; idx < graph->numnodes; idx++)
+    for (int idx = old_numnodes; idx < graph->numnodes; idx++)
     {
         graph->edges[idx] = (bool*) calloc(sizeof(bool), graph->numnodes);
         CHECK_ERR(graph->edges[idx] == NULL, "NOT ENOUGH MEMORY");
     }
-    for (int idx1 = 0; idx1 < graph->numnodes; idx1++)
-    {
-        for (int idx2 = 0; idx2 < graph->numnodes; idx2++)
-        {
-            graph->edges[idx1][idx2] = tempEdges[idx1][idx2];
-        }
-    }
+    
     graph->vertices = (int*) realloc(graph->vertices, graph->numnodes);
-
 }
 
 //===================================================================
@@ -160,7 +165,7 @@ void RemoveNode(struct Graph* graph, FILE* base)
             graph->vertices[deleteElem] = POISON;
         }
     }
-    graph->curnumnodes--;
+   // graph->curnumnodes--;
     for(int idx = 0; idx < graph->numnodes; idx++)
     {
         graph->edges[idx][deleteElem] = 0;
@@ -190,6 +195,7 @@ void RemoveEdge(struct Graph* graph, FILE* base)
         printf("edge from %d to %d is not exist", src, dest);
         return;
     }
+    graph->edges[idx1][idx2] = 0;
 }
 
 //=======================================================-
@@ -250,7 +256,7 @@ bool IsVisited(struct Graph* graph, int index)
 
 //============================================================
 
-void ReadCommands(struct Graph* graph, FILE* base, FILE* answer)
+void ReadCommands(struct Graph* graph, FILE* base, FILE* answer, bool testflag)
 {
     CHECK_ERR(graph == NULL, "graph == null");
     char command[MAX_COMMAND_SIZE] = "";
@@ -260,7 +266,8 @@ void ReadCommands(struct Graph* graph, FILE* base, FILE* answer)
         
         if (strcmp(command, "ADD_NODE") == 0)
         {
-            AddNode(graph, base);
+            AddNode(graph, base, testflag);
+            testflag = false;
         }
         else if (strcmp(command, "ADD_EDGE") == 0)
         {
@@ -317,21 +324,24 @@ void Tests(struct Graph* graph, struct Test* test, FILE* base)
     fscanf(base, "%d", &numtests);
     for (int idx = 0; idx < numtests; idx++)
     {
+        bool testflag = false;
+        if (idx > 0)    testflag = true;        // TO MAKE FREE_CELL = 0;
+
         graph = CreateGraph();
         test->answer = fopen("answer.txt", "w");
 
-        ReadCommands(graph, base, test->answer);
+        ReadCommands(graph, base, test->answer, testflag); 
         RPO(graph, graph->root);
         PrintRPO(graph, test->answer);
-
+         
         test->programresult = (int*) calloc(graph->curnumnodes, sizeof(int));
         test->neededresult  = (int*) calloc(graph->curnumnodes, sizeof(int));
         fclose(test->answer);
 
         test->answer = fopen("answer.txt", "r");
         bool result = Verifier(graph, test, base);
-        if (result == true)   printf("Test %d successfully completed", idx + 1 );
-        else                  printf("Test %d failed", idx + 1);
+        if (result == true)   printf("Test %d successfully completed\n", idx + 1 );
+        else                  printf("Test %d failed\n", idx + 1);
 
         DestroyGraph(graph);
         fclose(test->answer);
