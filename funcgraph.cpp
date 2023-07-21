@@ -90,13 +90,13 @@ void AddEdge(struct Graph* graph, FILE* base)
     dest = idx2;
     if (!HasNode(graph, &idx1) || !HasNode(graph, &idx2))
     {
-        printf("one vertex doesn't exist to create an edge");
+        printf("one vertex doesn't exist to create an edge\n");
         return;
     }
 
     if (graph->edges[idx1][idx2] == 1)
     {
-        printf("edge from %d to %d is already exist", src, dest);
+        printf("edge from %d to %d is already exist\n", src, dest);
         return;
     }
 
@@ -179,10 +179,12 @@ void RemoveNode(struct Graph* graph, FILE* base)
     valuenode = value;
     if (!HasNode(graph, &valuenode))
     {
-        printf("Node with num %d is not exist", graph->vertices[valuenode]);
+        printf("Node with num %d is not exist\n", graph->vertices[valuenode]);
         return;
     }
-    printf("VALUE IS %d", value);
+    #ifdef DEBUG
+        printf("VALUE IS %d", value);
+    #endif
     int deleteElem = 0;     // to find index of deleted element
     for(int idx = 0; idx < graph->curnumnodes; idx++)
     {
@@ -194,7 +196,9 @@ void RemoveNode(struct Graph* graph, FILE* base)
         }
     }
     graph->curnumnodes--;
-    printf("DELETE %d", deleteElem);
+    #ifdef DEBUG
+        printf("DELETE %d", deleteElem);
+    #endif
     for(int idx = 0; idx < graph->curnumnodes; idx++)
     {
         graph->edges[idx][deleteElem] = 0;
@@ -216,12 +220,12 @@ void RemoveEdge(struct Graph* graph, FILE* base)
     dest = idx2;
     if (!HasNode(graph, &idx1) || !HasNode(graph, &idx2))
     {
-        printf("one vertex doesn't exist to delete an edge");
+        printf("one vertex doesn't exist to delete an edge\n");
         return;
     }   
     if (graph->edges[idx1][idx2] == 0)
     {
-        printf("edge from %d to %d is not exist", src, dest);
+        printf("edge from %d to %d is not exist\n", src, dest);
         return;
     }
     graph->edges[idx1][idx2] = 0;
@@ -446,7 +450,7 @@ bool Verifier(struct Graph* graph, struct Test* test, FILE* base)
         #ifdef DEBUG
             printf("%d %d\n", test->programresult[idx], test->neededresult[idx]);
         #endif
-        
+
         if (test->neededresult[idx] != test->programresult[idx])
         {   
             return false;
@@ -467,4 +471,3 @@ void DestroyGraph(struct Graph* graph)
     free(graph->vertices);
     free(graph);
 }
-    
