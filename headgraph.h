@@ -13,14 +13,14 @@
                 } while(0)
 
 
-const int START_NUMNODES   = 8;
+const int START_NUMNODES   = 8;         // the first size of array nodes
 const int POISON           = -2281337;
 const int MAX_COMMAND_SIZE = 15;
+const int VISITED_POISON   = -32269;  // POISON for array visited
 struct PostOrder
 {
-    int* visited;
-    int* base;
-    int counter;
+    int* visited;   // nodes those are already visited
+    int counter;  // how many nodes are already visited
 };
 struct Graph
 {
@@ -35,7 +35,7 @@ struct Graph
 
 struct Test
 {
-    FILE* answer;
+    FILE* answer;           //  the results of program(temporary storage for answers)
     int* neededresult;
     int* programresult;
 };
