@@ -16,8 +16,11 @@ struct Graph* CreateGraph()
         CHECK_ERR(graph->edges[idx] == NULL, "NOT ENOUGH MEMORY");
     }
 
-    graph->postorder.base = (int*) calloc(sizeof(int), START_NUMNODES);
     graph->postorder.visited = (int*) calloc(sizeof(int), START_NUMNODES);
+    for (int i = 0; i < graph->numnodes; i++)
+    {
+        graph->postorder.visited[i] = VISITED_POISON;
+    }
     graph->postorder.counter = 0;
     graph->root = 0;
     graph->vertices = (int*) calloc(sizeof(int), START_NUMNODES);
@@ -130,6 +133,14 @@ void ReallocGraph(struct Graph* graph)
         graph->edges[idx] = (bool*) realloc(graph->edges[idx], sizeof(bool) * graph->numnodes);
         CHECK_ERR(graph->edges[idx] == NULL, "NOT ENOUGH MEMORY");
     }
+    
+    for (int i = 0; i < old_numnodes; i++)
+    {
+        for (int j = old_numnodes; j < graph->numnodes; j++)
+        {
+            graph->edges[i][j] = 0;
+        }
+    }
 
     graph->edges = (bool**) realloc(graph->edges, sizeof(bool*) * graph->numnodes);
     CHECK_ERR(graph->edges == NULL, "NOT ENOUGH MEMORY");
@@ -139,8 +150,22 @@ void ReallocGraph(struct Graph* graph)
         graph->edges[idx] = (bool*) calloc(sizeof(bool), graph->numnodes);
         CHECK_ERR(graph->edges[idx] == NULL, "NOT ENOUGH MEMORY");
     }
-    
-    graph->vertices = (int*) realloc(graph->vertices, graph->numnodes);
+    #ifdef DEBUG
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                printf("%d ", graph->edges[i][j]);
+            }
+            printf("\n");
+        }
+    #endif
+    graph->vertices = (int*) realloc(graph->vertices, graph->numnodes * sizeof(int));
+    graph->postorder.visited = (int*) realloc(graph->postorder.visited, sizeof(int) * graph->numnodes);
+    for (int i = old_numnodes; i < graph->numnodes; i++)
+    {
+        graph->postorder.visited[i] = VISITED_POISON;
+    }
 }
 
 //===================================================================
@@ -152,21 +177,25 @@ void RemoveNode(struct Graph* graph, FILE* base)
     int valuenode = 0;
     fscanf(base, "%d", &value);
     valuenode = value;
-    if (!HasNode(graph, &value))
+    if (!HasNode(graph, &valuenode))
     {
-        printf("Node with num %d is not exist", valuenode);
+        printf("Node with num %d is not exist", graph->vertices[valuenode]);
         return;
     }
-    int deleteElem= 0; 
-    for(deleteElem = 0; deleteElem < graph->curnumnodes; deleteElem++)
+    printf("VALUE IS %d", value);
+    int deleteElem = 0;     // to find index of deleted element
+    for(int idx = 0; idx < graph->curnumnodes; idx++)
     {
-        if (graph->vertices[deleteElem] == value)
+        if (graph->vertices[idx] == value)
         {
-            graph->vertices[deleteElem] = POISON;
+            graph->vertices[idx] = POISON;
+            deleteElem = idx;
+            graph->curnumnodes++; // чтобы в сумме количество нодов не изменилось
         }
     }
-   // graph->curnumnodes--;
-    for(int idx = 0; idx < graph->numnodes; idx++)
+    graph->curnumnodes--;
+    printf("DELETE %d", deleteElem);
+    for(int idx = 0; idx < graph->curnumnodes; idx++)
     {
         graph->edges[idx][deleteElem] = 0;
         graph->edges[deleteElem][idx] = 0;
@@ -205,7 +234,13 @@ void Root(struct Graph* graph, FILE* base)
     CHECK_ERR(graph == NULL, "graph == null");
     int root = 0;   
     fscanf(base, "%d", &root);
-    graph->root = root;
+    int root_elem = 0;  // to find an idx of root element in our array of vertices
+    for (root_elem = 0; root_elem < graph->curnumnodes; root_elem++)
+    {
+        if (graph->vertices[root_elem] == root)
+        break;
+    }
+    graph->root = root_elem;
 }
 
 //=========================================================
@@ -213,9 +248,31 @@ void Root(struct Graph* graph, FILE* base)
 void RPO(struct Graph* graph, int curnode)
 {
     CHECK_ERR(graph == NULL, "graph == null");
-    graph->postorder.visited[graph->postorder.counter++] = curnode;
+
+    if (!IsVisited(graph, curnode))
+    {
+        graph->postorder.visited[graph->postorder.counter++] = curnode;
+
+        #ifdef DEBUG
+            printf("visited %d\n", graph->postorder.visited[graph->postorder.counter - 1]);
+            printf(" is %d  \n", curnode);
+        #endif
+    }
+
+    #ifdef DEBUG
+        for(int i =0; i < 5; i++)
+        {
+            printf("%d ", graph->postorder.visited[i]);
+        }
+    #endif
+
     for (int idx = 0; idx < graph->curnumnodes; idx++)
     {
+        #ifdef DEBUG
+            printf("our idx is %d ", idx);
+            printf("- %d\n",graph->edges[curnode][idx]);
+        #endif
+
         if (!IsVisited(graph, idx) && graph->edges[curnode][idx])
         {
             RPO(graph, idx);
@@ -225,6 +282,7 @@ void RPO(struct Graph* graph, int curnode)
             printf("found loop %d -> %d\n", graph->vertices[curnode], graph->vertices[idx]);
         }
     }
+    
 }
 
 //==================================================
@@ -232,11 +290,30 @@ void RPO(struct Graph* graph, int curnode)
 void PrintRPO(struct Graph* graph, FILE* answer)
 {
     CHECK_ERR(graph == NULL, "graph == null");
+    
     for (int idx = 0; idx < graph->curnumnodes; idx++)
     {
-        fprintf(answer, "%d ", graph->vertices[graph->postorder.visited[idx]]);
+        #ifdef DEBUG
+            printf("cur is %d ", graph->curnumnodes);
+            printf("%d ", graph->postorder.visited[idx]);
+        #endif
+
+        if (graph->postorder.visited[idx] != VISITED_POISON)
+        {
+            fprintf(answer, "%d ", graph->vertices[graph->postorder.visited[idx]]);
+            #ifdef DEBUG
+                printf("INDEX %d", idx);
+            #endif
+        }
     }
-  
+    
+    #ifdef DEBUG
+        for(int i = 0; i < graph->curnumnodes; i++)
+        {
+            printf("vertice %d\n", graph->vertices[i]);
+        }
+        printf("3 is %d", graph->vertices[2]);
+    #endif
 }
 
 //=============================================
@@ -248,6 +325,10 @@ bool IsVisited(struct Graph* graph, int index)
         {
             if (graph->postorder.visited[isvisit] == index)
             {
+                #ifdef DEBUG
+                     // printf("ISVISIT%d", isvisit);
+                #endif
+
                 return true;
             }
         } 
@@ -256,10 +337,10 @@ bool IsVisited(struct Graph* graph, int index)
 
 //============================================================
 
-void ReadCommands(struct Graph* graph, FILE* base, FILE* answer, bool testflag)
-{
-    CHECK_ERR(graph == NULL, "graph == null");
-    char command[MAX_COMMAND_SIZE] = "";
+void ReadCommands(struct Graph* graph, FILE* base, FILE* answer, bool testflag) //FILE* answer - 
+{                                                                               // where to print results
+    CHECK_ERR(graph == NULL, "graph == null");                                 // FILE* base - from where scan results
+    char command[MAX_COMMAND_SIZE] = "";                                       //     (stdin of file)
     fscanf(base, "%s", command);
     while (strcmp("END", command) != 0)
     {
@@ -325,7 +406,7 @@ void Tests(struct Graph* graph, struct Test* test, FILE* base)
     for (int idx = 0; idx < numtests; idx++)
     {
         bool testflag = false;
-        if (idx > 0)    testflag = true;        // TO MAKE FREE_CELL = 0;
+        if (idx > 0)    testflag = true;        // testflag TO MAKE FREE_CELL = 0;
 
         graph = CreateGraph();
         test->answer = fopen("answer.txt", "w");
@@ -359,8 +440,13 @@ bool Verifier(struct Graph* graph, struct Test* test, FILE* base)
     for (int idx = 0; idx < graph->curnumnodes; idx++)
     {
         fscanf(test->answer, "%d", &test->programresult[idx]);
-    
+        
         fscanf(base, "%d", &test->neededresult[idx]);
+
+        #ifdef DEBUG
+            printf("%d %d\n", test->programresult[idx], test->neededresult[idx]);
+        #endif
+        
         if (test->neededresult[idx] != test->programresult[idx])
         {   
             return false;
@@ -376,9 +462,9 @@ void DestroyGraph(struct Graph* graph)
     {
         free(graph->edges[idx]);
     }
-    free(graph->postorder.base);
     free(graph->postorder.visited);
     free(graph->edges);
     free(graph->vertices);
     free(graph);
 }
+    
