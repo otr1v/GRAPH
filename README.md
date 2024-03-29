@@ -1,1 +1,1 @@
-#Depth-first search, RPO numeration
+# Depth-first search, RPO numeration
